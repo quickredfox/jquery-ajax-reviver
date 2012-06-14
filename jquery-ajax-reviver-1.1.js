@@ -1,5 +1,5 @@
 /*
-* jQuery Ajax Reviver Plugin - v1.0 - 06/13/2012
+* jQuery Ajax Reviver Plugin - v1.1 - 06/13/2012
 * 
 * Copyright (c) 2012 "Quickredfox" Francois Lafortune
 * Licensed under the same conditions as jQuery itself.
@@ -12,28 +12,42 @@
   "use strict"
   
   var revive
+    , cast
     , add;
   
   if( $.type( $.ajaxSettings.revivers ) !== 'array' )
     $.ajaxSettings.revivers = [];
   
   revive = function( data, revivers ) {    
-    if( $.type( data ) === 'array'){
-      return data.reduce( function( revived, value, key ) {        
-        revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
-          return reviver.call( revived, key, value );
-        }, value ) , revivers );
-        return revived;
-      }, data );
-    }else if( $.type( data ) === 'object'){
-      return Object.keys(data).reduce( function( revived, key ) {        
-        var value = data[key]
-        revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
-          return reviver.call( revived, key, value );
-        }, value ) , revivers );
-        return revived;
-      }, data );
-    }else return json;
+        if( $.type( data ) === 'array'){
+          return data.reduce( function( revived, value, key ) {        
+            revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
+              return reviver.call( revived, key, value );
+            }, value ) , revivers );
+            return revived;
+          }, data );
+        }else if( $.type( data ) === 'object'){
+          return Object.keys(data).reduce( function( revived, key ) {        
+            var value = data[key]
+            revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
+              return reviver.call( revived, key, value );
+            }, value ) , revivers );
+            return revived;
+          }, data );
+        }else return json;
+      };
+  
+  cast = function( ) {
+    var fns  = []
+      , args = Array.prototype.slice.call( arguments );
+    for( var i =0; i< args.length; i++){
+      var current = args[i];
+      var next    = args[i+1];      
+      if( $.type( current ) === 'array' ){
+        
+      };
+    };
+    
   };
   
   add = function( collection, reviver, fn ) {
@@ -62,11 +76,11 @@
       add( options.revivers, original.revivers )
       return options.converters['text json'] = function( data ) {
         if ($.type(data ) !== 'string') return null;
-        else return JSON.parse( data, function( key, value ) {
+        else return JSON.parse.length === 2 ? JSON.parse( data, function( key, value ) {
           return options.revivers.reduce( function( newvalue, reviver ) {
             return reviver.call( data, key, newvalue );
           }, value );
-        } )
+        } ) : revive( JSON.parse(value), options.revivers );
       };
     }
   });
