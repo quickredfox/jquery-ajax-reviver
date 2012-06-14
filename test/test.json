@@ -1,0 +1,9 @@
+{
+  "created_at": "Thu Jun 14 2012 13:06:45 GMT-0400 (EDT)",
+  "published_at":"Thu Jun 14 2012 13:08:58 GMT-0400 (EDT)",
+  "nested": { "level2": { 
+    "foo": "bar", 
+    "created_at": "Thu Jun 14 2012 13:06:45 GMT-0400 (EDT)",
+    "published_at":"Thu Jun 14 2012 13:08:58 GMT-0400 (EDT)"
+  } }
+}
