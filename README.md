@@ -1,4 +1,4 @@
-jQuery Ajax Reviver Plugin - v1.0 - 06/13/2012
+jQuery Ajax Reviver Plugin - v1.1 - 06/13/2012
 ==============================================
 
 Copyright (c) 2012 Francois Lafortune, @quickredfox
@@ -89,10 +89,11 @@ Simply pass ``revivers: true`` within your ajax options.
       }
     );
     
-Need to pass in non-blogbal revivers? That's easy, the "revivers" option supports either a reviver function mapping object, 
+Need to pass in non-global revivers? That's easy, the "revivers" option supports either a reviver function mapping object, 
 an array of reviver functions or a lone reviver function, like so:
 
 #### Per/call revivers as object mapping
+
     $.ajax(
       {
         dataType: 'json',
@@ -104,6 +105,7 @@ an array of reviver functions or a lone reviver function, like so:
     );
     
 #### Per/call revivers as array
+
     $.ajax(
       {
         dataType: 'json',
@@ -118,6 +120,7 @@ an array of reviver functions or a lone reviver function, like so:
     );
     
 #### Per/call single reviver as function
+
     $.ajax(
       {
         dataType: 'json',
@@ -130,14 +133,53 @@ an array of reviver functions or a lone reviver function, like so:
     );
     
 
-*Note: The value of "this" inside the reviver function is the json object or nested object being revived.*
+*Note: The value of "this" inside the reviver function is the json object or nested object who owns the key currently being passed to the reviver function.*
 
+Get funky!
+----------
+
+Version 1.1 has been slightly refactored for the sake of adding some robustness. A fun side-effect is that we can now register revivers in a couple more funky ways.
+
+#### Multiple revivers for same key.
+  
+    // Why you'd want to do this? No one knows, but it works!
+    $.ajaxReviver({
+     created_at: [
+      function( v ){ return new Date(v); },
+      function( v ){ 
+        return v.getTime();
+      }
+     ] 
+    });
+
+#### Same as above, different syntactic approach. 
+
+    $.ajaxReviver([
+     'created_at',
+     [
+      function( v ){ return new Date(v); },
+      function( v ){ return v.getTime(); }
+     ] 
+    ]);
+    
+#### Mixed sytax! Aka: I dont know what I'm doing, but it seems to work.
+
+    $.ajaxReviver([
+     'created_at',
+     function( v ){ return new Date(v); },
+     { published_at: [
+       function( v ){ return new Date(v); },
+       function( v ){ return v.getTime(); }
+      ] },
+     function(key,value){
+       if( key  === 'nested') return {};
+       return value;
+     }
+    ]);
+ 
 Caveats
 -------
 
-- If you override the 'text json' converter, this will not work. 
-
-
-
+- If you override the 'text json' converter, <del>this will not work</del> <ins>It will be processed before revivers but adds overhead as it must be re-stringified for JSON.parse to "revive" it again. This behavior may change in subsequent versions.</ins>
 
 

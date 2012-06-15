@@ -5,23 +5,26 @@ var clear = function() {
 
 module( "$.ajaxReviver()" );
 
+// test 1
 test( "Accepts a function as it's sole argument.", function(){
   clear();
   var fn = function( k, v ){ return v };
   $.ajaxReviver( fn );
-  ok( $.ajaxSettings.revivers.length === 1, '$.ajaxSettings.revivers contains one function.' );
+  equal( $.ajaxSettings.revivers.length, 1, '$.ajaxSettings.revivers contains one function.' );
   strictEqual( $.ajaxSettings.revivers[0], fn, 'the function is the one provided.' );  
 });
 
+// test 2
 test( "Accepts a string as first argument and a function as second argument.", function(){
   clear();
   var fn = function( v ){ return new Date( v ) };
   $.ajaxReviver( 'created_at', fn );
-  ok( $.ajaxSettings.revivers.length === 1, '$.ajaxSettings.revivers contains one function.' );
+  equal( $.ajaxSettings.revivers.length, 1, '$.ajaxSettings.revivers contains one function.' );
   notStrictEqual( $.ajaxSettings.revivers[0], fn, 'the function provided has been proxied.' );  
-  ok( $.ajaxSettings.revivers[0].length === 2, 'The proxy function accepts two arguments.');
+  equal( $.ajaxSettings.revivers[0].length, 2, 'The proxy function accepts two arguments.');
 });
 
+// test 3
 test("Accepts an array of reviver functions as it's sole argument.", function() {
   clear();
   var fns = [
@@ -29,11 +32,12 @@ test("Accepts an array of reviver functions as it's sole argument.", function() 
     function( k, v  ){  return v }    
   ];
   $.ajaxReviver( fns );
-  ok( $.ajaxSettings.revivers.length === 2, '$.ajaxSettings.revivers contains two functions.' );
+  equal( $.ajaxSettings.revivers.length,2, '$.ajaxSettings.revivers contains two functions.' );
   strictEqual( $.ajaxSettings.revivers[0], fns[0],'First function is the first one provided.');
   strictEqual( $.ajaxSettings.revivers[1], fns[1],'Second function is the second one provided.');
 });
 
+// test 4
 test("Accepts an object mapping of reviver functions as it's sole argument.", function() {
   clear();
   var stringToDate = function( string ) {
@@ -44,19 +48,40 @@ test("Accepts an object mapping of reviver functions as it's sole argument.", fu
     published_at: stringToDate    
   };
   $.ajaxReviver( fns );
-  ok( $.ajaxSettings.revivers.length === 2, '$.ajaxSettings.revivers contains two functions.' );
+  equal( $.ajaxSettings.revivers.length,2, '$.ajaxSettings.revivers contains two functions.' );
   notStrictEqual( $.ajaxSettings.revivers[0], fns.created_at,'The first function has been proxied.');
   notStrictEqual( $.ajaxSettings.revivers[1], fns.published_at,'The second function has been proxied.');
 });
 
+// test 5
+test("Accepts an mix of all syntaxes.", function() {
+  clear();
+  var stringToDate = function( string ) {
+    return new Date( string );
+  };
+  var fns = [
+    'created_at', 
+    [
+      function( v ) {  return new Date( v ); },
+      function( v ) {  return "DATE:" + v.toString(); }
+    ],
+    { published_at: [ function( v ) {  return new Date( v ); } ]}
+  ];
+  $.ajaxReviver( fns );
+  equal( $.ajaxSettings.revivers.length, 3 , '$.ajaxSettings.revivers contains 3 functions.' );
+});
+
+// test 6
 test("Proxies functions properly when revivers provided in object/mapping form.", function() {
   clear();
   var stringToDate = function( string ) {
     return new Date( string );
   };
   var fns = {
-    test1: function( v ) { return 'A'; },
-    test2: function( v ) { return 'B'; }    
+    test1: function( v ) { 
+      return 'A'; },
+    test2: function( v ) { 
+      return 'B'; }    
   };
   $.ajaxReviver( fns );
   ok( $.ajaxSettings.revivers[0]( 'test1', null ) === 'A', 'The first function has been proxied correctly.');
@@ -68,6 +93,7 @@ test("Proxies functions properly when revivers provided in object/mapping form."
 
 module( "$.ajax( { revivers: [ ... ] } )" );
 
+// test 7
 asyncTest("Uses revivers when detecting the 'json' dataType and truthiness of the 'revivers' ajax options.", 3 , function() {
   clear();
   var stringToDate = function( string ) { return new Date( string ); };
@@ -90,7 +116,7 @@ asyncTest("Uses revivers when detecting the 'json' dataType and truthiness of th
     }
   });
 });
-
+// test 8
 asyncTest("Supports an additional set of revivers as an array of functions in the 'revivers' ajax options.", 3, function() {
   clear();
   var stringToDate = function( string ) { return new Date( string ); };
@@ -113,7 +139,7 @@ asyncTest("Supports an additional set of revivers as an array of functions in th
     }
   });
 });
-
+// test 9
 asyncTest("Supports an additional set of revivers as an object mapping of reviver functions in the 'revivers' ajax option", 3, function() {
   clear();
   var stringToDate = function( string ) { return new Date( string ); };
@@ -135,7 +161,7 @@ asyncTest("Supports an additional set of revivers as an object mapping of revive
     }
   });
 });
-
+// test 10
 asyncTest("Supports an additional revivers function in the 'revivers' ajax option", 3, function() {
   clear();
   var stringToDate = function( string ) { return new Date( string ); };
@@ -158,7 +184,7 @@ asyncTest("Supports an additional revivers function in the 'revivers' ajax optio
     }
   });
 });
-
+// test 11
 asyncTest("Ignores revivers when 'reviver' falsy in ajax option", 1, function() {
   clear();
   var stringToDate = function( string ) { return new Date( string ); };
@@ -176,3 +202,54 @@ asyncTest("Ignores revivers when 'reviver' falsy in ajax option", 1, function() 
     }
   });
 });
+// test 12
+asyncTest( "Value of 'this' inside reviver is json object/nested json object", 1, function() {
+  clear();
+  /* Note: this test (like most) is only partial. I should count the times the function is called to determine it's check val (fix for nested object testing) */
+  $.getJSON('test-simple.json', function( raw ) { 
+    $.ajaxReviver( { 
+      created_at: function( v ){
+          deepEqual( this, raw, "'this' context intact!");
+          return v;
+        }
+    });
+    $.ajax( { 
+      url:'test-simple.json',
+      type: 'GET',
+      dataType: 'json',
+      revivers: true,
+      complete: function() {
+        start()
+      }
+    });
+    
+  });
+  
+});
+// test 13
+asyncTest( "Overriding ['text json'] converter does not break revivers", 1, function() {
+  clear();
+  $.ajaxReviver({
+    created_at: function( v ) {
+      return 1234;
+    }
+  });
+  $.ajax( { 
+      url:'test.json',
+      type: 'GET',
+      dataType: 'json',
+      revivers: true,
+      converters: {
+        "text json": function( textValue ) {
+          return JSON.parse( textValue );
+        }
+      },
+      success: function( json ) {
+        equal( json.created_at, 1234, 'Reviver is still applied')
+      },
+      complete: function() {
+        start()
+      }
+  });
+});
+

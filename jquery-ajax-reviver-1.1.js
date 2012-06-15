@@ -17,70 +17,70 @@
   
   if( $.type( $.ajaxSettings.revivers ) !== 'array' )
     $.ajaxSettings.revivers = [];
-  
-  revive = function( data, revivers ) {    
-        if( $.type( data ) === 'array'){
-          return data.reduce( function( revived, value, key ) {        
-            revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
-              return reviver.call( revived, key, value );
-            }, value ) , revivers );
-            return revived;
-          }, data );
-        }else if( $.type( data ) === 'object'){
-          return Object.keys(data).reduce( function( revived, key ) {        
-            var value = data[key]
-            revived[ key ] = revive( revivers.reduce( function( value, reviver ) {
-              return reviver.call( revived, key, value );
-            }, value ) , revivers );
-            return revived;
-          }, data );
-        }else return json;
-      };
-  
+
   cast = function( ) {
     var fns  = []
-      , args = Array.prototype.slice.call( arguments );
-    for( var i =0; i< args.length; i++){
-      var current = args[i];
-      var next    = args[i+1];      
-      if( $.type( current ) === 'array' ){
-        
-      };
-    };
-    
-  };
+      , args = Array.prototype.slice.call( arguments )
+      , arg;
+      if( args.length === 0 ) return fns;
+      arg = args.shift();
+      switch( $.type( arg ) ){
+        case 'function' : fns.push( arg ); break;
+        case 'string'   :
+          var key = arg
+            , fn  = args.shift()
+          switch( $.type( fn ) ){
+            case 'function' :
+              var f = function( k, v ) { return k === key ? fn.call( this, v ) : v; };
+              fns.push( f )
+            break;
+            case 'array' :
+              fn.forEach( function( f ){
+                fns.push( cast.call(null, key, f )[0] );           
+              } )
+            break;
+            default: throw new Error( 'Argument Error' ); break;
+          };
+        break;
+        case 'array':
+          Array.prototype.push.apply( fns, arg );
+        break;
+        case 'object':
+          Object.keys(arg).forEach( function( key ) {
+            fns.push( cast.call( null, key, arg[key] )[0] );
+          });
+        break;
+      }
+      return fns;
+  }
   
-  add = function( collection, reviver, fn ) {
-    if( $.type( reviver ) === 'function'){
-      collection.push( reviver );
-    }else if( $.type( reviver) === 'string' && $.type( fn ) === 'function'){
-      collection.push( function(k, v) {
-        return k === reviver ? fn( v ) : v
-      });
-    }else if( $.type( reviver ) === 'array' ){
-      reviver.reduce( function( revivers, fn ) {
-        return add( revivers, fn );
-      }, collection );
-    }else if( $.type( reviver ) === 'object' ){
-      Object.keys( reviver ).reduce( function( revivers, k ) {
-        return add( revivers, k, reviver[k]);
-      } , collection );
-    };
-    return collection
+
+
+  add = function( collection /* ... */ ) {
+    var args = Array.prototype.slice.call( arguments )
+      , collection = args.shift();
+    return Array.prototype.push.apply( collection, cast.apply( null, args ) );
   }
   
   // Capture 'json' dataType requests and tack-on revivers if wanted. 
   $.ajaxPrefilter( 'json', function(options, original, xhr) {
     if (original.revivers) {
       options.revivers = $.ajaxSettings.revivers;
-      add( options.revivers, original.revivers )
+      if( original.revivers !== true ){
+        add( options.revivers, original.revivers );        
+      };
+      var converter = options.converters['text json'];
       return options.converters['text json'] = function( data ) {
-        if ($.type(data ) !== 'string') return null;
-        else return JSON.parse.length === 2 ? JSON.parse( data, function( key, value ) {
+        if ($.type(data ) !== 'string') return data;
+        if( $.type(converter) === 'function'){
+          data = JSON.stringify( converter.call( this, data ) );
+        };
+        return JSON.parse( data, function( key, value ) {
+          var context = this;
           return options.revivers.reduce( function( newvalue, reviver ) {
-            return reviver.call( data, key, newvalue );
+            return reviver.call( context, key, newvalue );
           }, value );
-        } ) : revive( JSON.parse(value), options.revivers );
+        });
       };
     }
   });
