@@ -1,4 +1,4 @@
-jQuery Ajax Reviver Plugin - v1.1 - 06/13/2012
+jQuery Ajax Reviver Plugin - v1.2 - 06/19/2012
 ==============================================
 
 Copyright (c) 2012 Francois Lafortune, @quickredfox

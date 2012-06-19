@@ -1,5 +1,5 @@
 /*
-* jQuery Ajax Reviver Plugin - v1.1 - 06/13/2012
+* jQuery Ajax Reviver Plugin - v1.2 - 06/19/2012
 * 
 * Copyright (c) 2012 "Quickredfox" Francois Lafortune
 * Licensed under the same conditions as jQuery itself.
@@ -62,9 +62,10 @@
     return Array.prototype.push.apply( collection, cast.apply( null, args ) );
   }
   
+  
   // Capture 'json' dataType requests and tack-on revivers if wanted. 
   $.ajaxPrefilter( 'json', function(options, original, xhr) {
-    if (original.revivers) {
+    if (original.revivers || options.revivers ) {
       options.revivers = $.ajaxSettings.revivers;
       if( original.revivers !== true ){
         add( options.revivers, original.revivers );        
